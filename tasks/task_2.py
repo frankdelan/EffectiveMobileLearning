@@ -1,10 +1,6 @@
 import random
 
 
-N: int = 10
-MINES: int = 12
-
-
 def clear_console():
     """Функция для очистки консоли"""
     print('\n' * 50)
@@ -15,7 +11,7 @@ def check_for_out_of_range(raw_coordinates: list[int]) -> bool:
     return len(list(filter(lambda x: 0 <= x < N, raw_coordinates))) == 2
 
 
-def game_cycle(game_obj: 'GamePole') -> bool:
+def game_process(game_obj: 'GamePole') -> bool:
     """Функция контролирующая состояние игры"""
     status: bool = True
     while status:
@@ -25,7 +21,7 @@ def game_cycle(game_obj: 'GamePole') -> bool:
         step: str = input()
         try:
             coordinates: list = list(map(int, step.split(' ')))
-        except Exception:
+        except ValueError:
             print('Координаты должны быть числами!')
             continue
         if check_for_out_of_range(coordinates):
@@ -121,6 +117,9 @@ class GamePole:
 
 
 if __name__ == '__main__':
+    N: int = 10
+    MINES: int = 12
+
     game = GamePole(N, MINES)
     print("Вас привествует игра 'Сапёр'\n"
           "Для хода введите координаты клетки\n"
@@ -128,7 +127,7 @@ if __name__ == '__main__':
     input("Если вы готовы, нажмите Enter...\n\n")
 
     game.update_fields()
-    game_status = game_cycle(game)
+    game_status = game_process(game)
 
     if game_status:
         print("\n\n\tПоздравляю, вы победили!")

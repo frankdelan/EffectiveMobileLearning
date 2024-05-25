@@ -40,27 +40,22 @@ class LinkedList:
     def add_obj(self, obj):
         if self.head is None:
             self.head = obj
-        elif self.tail is None:
             self.tail = obj
-            self.head.next = self.tail
-            self.tail.prev = self.head
         else:
+            obj.prev = self.tail
             self.tail.next = obj
-            self.tail.next.prev = self.tail
-            self.tail = self.tail.next
+            self.tail = obj
 
-    def remove_obj(self) -> str | None:
-        if not self.head:
-            return 'Список пуст!'
-        elif self.head.next is None:
+    def remove_obj(self):
+        if self.head is self.tail:
             self.head = None
+            self.tail = None
         else:
-            pre_last = self.tail.prev
-            pre_last.next = None
-            self.tail.prev = None
+            self.tail = self.tail.prev
+            self.tail.next = None
 
-    def get_data(self) -> list:
-        list_data: list = []
+    def get_data(self) -> list[str]:
+        list_data: list[str] = []
         current_obj = self.head
         while current_obj is not None:
             list_data.append(current_obj.data)

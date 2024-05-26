@@ -70,8 +70,15 @@ class GamePole:
                     open_cells += 1
         return open_cells == (self.n ** 2 - self.m)
 
+    def calculate_around_mines(self):
+        """Метод, который определяет количество мин поблизости для каждой ячейки"""
+        for row in range(self.n):
+            for col in range(self.n):
+                mines_count: int = self.get_around_mines_count(row, col)
+                self.pole[row][col].around_mines = mines_count
+
     def init(self):
-        """Метод, который расставляет мины по полю и определяет количество мин поблизости для всех ячеек"""
+        """Метод, который расставляет мины по полю"""
         seen: list = []
         while len(seen) < self.m:
             row: int = random.randint(0, self.n - 1)
@@ -79,11 +86,7 @@ class GamePole:
             if (row, col) not in seen:
                 self.pole[row][col].mine = True
                 seen.append((row, col))
-
-        for row in range(self.n):
-            for col in range(self.n):
-                mines_count: int = self.get_around_mines_count(row, col)
-                self.pole[row][col].around_mines = mines_count
+        self.calculate_around_mines()
 
     def show(self, field: list[list[str]]):
         """Метод, который выводит текущее состояние поля"""
@@ -117,8 +120,8 @@ class GamePole:
 
 
 if __name__ == '__main__':
-    N: int = 10
-    MINES: int = 12
+    N: int = 3
+    MINES: int = 2
 
     game = GamePole(N, MINES)
     print("Вас привествует игра 'Сапёр'\n"

@@ -2,7 +2,7 @@ from typing import Optional
 
 
 class ObjList:
-    def __init__(self, data):
+    def __init__(self, data: str):
         self.__data: str = data
         self.__next: Optional[ObjList] = None
         self.__prev: Optional[ObjList] = None
@@ -38,6 +38,7 @@ class LinkedList:
         self.tail = None
 
     def add_obj(self, obj):
+        """Метод для добавления объекта в конец списка"""
         if self.head is None:
             self.head = obj
             self.tail = obj
@@ -47,6 +48,7 @@ class LinkedList:
             self.tail = obj
 
     def remove_obj(self):
+        """Метод для удаления последнего элемента списка"""
         if self.head is self.tail:
             self.head = None
             self.tail = None
@@ -55,6 +57,7 @@ class LinkedList:
             self.tail.next = None
 
     def get_data(self) -> list[str]:
+        """Метод, возвращающий все информацию по каждому элементу списка"""
         list_data: list[str] = []
         current_obj = self.head
         while current_obj is not None:

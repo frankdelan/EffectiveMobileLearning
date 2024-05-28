@@ -32,24 +32,24 @@ def game_process(game_obj: 'GamePole') -> bool:
 
 
 class Cell:
-    def __init__(self, around_mines=0, mine=False):
+    def __init__(self, around_mines: int = 0, mine: bool = False):
         self.around_mines: int = around_mines
         self.mine: bool = mine
         self.fl_open: bool = False
 
 
 class GamePole:
-    def __init__(self, n, mines_count):
+    def __init__(self, n: int, mines_count: int):
         self.n: int = n
         self.m: int = mines_count
         self.__pole = [[Cell() for _ in range(n)] for _ in range(n)]
-        self.init()
+        self._init()
 
     @property
     def pole(self) -> list[list[Cell]]:
         return self.__pole
 
-    def get_around_mines_count(self, row: int, col: int) -> int:
+    def _get_around_mines_count(self, row: int, col: int) -> int:
         """Метод, который считает количество мин рядом для каждой ячейки"""
         counter: int = 0
         for i in range(max(0, row - 1), min(self.n, row + 2)):
@@ -70,14 +70,14 @@ class GamePole:
                     open_cells += 1
         return open_cells == (self.n ** 2 - self.m)
 
-    def calculate_around_mines(self):
+    def _calculate_around_mines(self):
         """Метод, который определяет количество мин поблизости для каждой ячейки"""
         for row in range(self.n):
             for col in range(self.n):
-                mines_count: int = self.get_around_mines_count(row, col)
+                mines_count: int = self._get_around_mines_count(row, col)
                 self.pole[row][col].around_mines = mines_count
 
-    def init(self):
+    def _init(self):
         """Метод, который расставляет мины по полю"""
         seen: list = []
         while len(seen) < self.m:
@@ -86,9 +86,9 @@ class GamePole:
             if (row, col) not in seen:
                 self.pole[row][col].mine = True
                 seen.append((row, col))
-        self.calculate_around_mines()
+        self._calculate_around_mines()
 
-    def show(self, field: list[list[str]]):
+    def _show(self, field: list[list[str]]):
         """Метод, который выводит текущее состояние поля"""
         print('\t' + ' '.join(map(str, list(range(self.n)))))
         print('\t' + '_ ' * self.n)
@@ -106,7 +106,7 @@ class GamePole:
                     open_field[row][col] = str(self.pole[row][col].around_mines)
                 elif not self.pole[row][col].fl_open:
                     open_field[row][col] = '#'
-        self.show(open_field)
+        self._show(open_field)
 
     def make_step(self, row: int, col: int) -> bool:
         """Метод, который позволяет игроку сделать шаг с проверкой на проигрыш"""

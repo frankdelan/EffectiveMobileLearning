@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "effectivemobilelearning"
+version = "0.1.0"
+description = ""
+authors = ["frank <frank.danil704@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+sqlalchemy = "^2.0.30"
+alembic = "^1.13.1"
+beautifulsoup4 = "^4.12.3"
+python-dotenv = "^1.0.1"
+asyncpg = "^0.29.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

@@ -4,7 +4,7 @@ from typing import Optional
 from sqlalchemy import BigInteger
 from sqlalchemy.orm import Mapped, mapped_column
 
-from tasks.task2.src.database import Base
+from database import Base
 
 
 class SpimexTradingResults(Base):

@@ -1,61 +1,75 @@
 import asyncio
 import datetime
-from typing import Generator
 
 from bs4 import BeautifulSoup
-from aiohttp import ClientSession
+from aiohttp import ClientSession, ClientPayloadError
 from xlrd import open_workbook
 
-from tasks.task2.src.models import SpimexTradingResults
-from tasks.task2.src.config import BXAJAXID
+from models import SpimexTradingResults
+from config import BXAJAXID
 
 BASE_URL: str = f'https://spimex.com/markets/oil_products/trades/results/?bxajaxid={BXAJAXID}'
 
 
 class QueryManager:
     @staticmethod
-    async def get_html() -> str:
+    async def get_html(uri: str) -> str:
+        """Метод для получения html страницы"""
         async with ClientSession() as session:
-            async with session.get(url=BASE_URL) as response:
+            async with session.get(url=uri) as response:
                 data: str = await response.text()
-        return data
+                if response.status == 200:
+                    return data
 
     @staticmethod
-    async def get_file_data(uri: str):
-        async with ClientSession() as session:
-            async with session.get(url=uri, params={"downloadformat": "xls"}) as response:
-                data: bytes = await response.read()
-        return await ParseManager.parse_xlsx(data)
+    async def get_file_data(uri: str, semaphore: asyncio.Semaphore) -> list[SpimexTradingResults]:
+        """Метод для получения данных xls файла"""
+        async with semaphore:
+            async with ClientSession() as session:
+                retries = 3
+                for attempt in range(retries):
+                    try:
+                        async with session.get(url=uri, params={"downloadformat": "xls"}) as response:
+                            data: bytes = await response.read()
+                            if response.status == 200:
+                                return await ParseManager.parse_xlsx(data)
+                    except ClientPayloadError as e:
+                        if attempt < retries - 1:
+                            await asyncio.sleep(1)
+                            continue
+                        else:
+                            raise e
 
     @staticmethod
-    async def get_page(url: str) -> list[str]:
-        async with ClientSession() as session:
-            async with session.get(url=url) as response:
-                data = await response.text()
+    async def get_page(uri: str) -> list[str]:
+        """Метод для получения ссылок на скачивание xls файлов"""
+        data: str = await QueryManager.get_html(uri)
         return await ParseManager.parse_download_links(data)
 
 
 class ParseManager:
     @staticmethod
     async def get_pages_count() -> int:
-        html: str = await QueryManager.get_html()
+        """Метод для получения количества страниц"""
+        html: str = await QueryManager.get_html(BASE_URL)
         soup = BeautifulSoup(html, 'html.parser')
         last_page: int = int((soup.find("div", {"class": 'bx-pagination-container'}).
                               find_all("li", {'class': ''}))[-1].find("a").find('span').text)
         return last_page
 
     @staticmethod
-    async def parse_download_links(text) -> list[str]:
+    async def parse_download_links(text: str) -> list[str]:
+        """Метод, которые возвращает генератор с ссылками на xls файлы"""
         soup = BeautifulSoup(text, 'html.parser')
         elements = soup.find_all("a", {'class': 'accordeon-inner__item-title link xls'})
-        return ('https://spimex.com' + link.get('href') for link in elements)
+        return ['https://spimex.com' + link.get('href') for link in elements]
 
     @staticmethod
-    async def parse_xlsx(data: bytes):
+    async def parse_xlsx(data: bytes) -> list[SpimexTradingResults]:
+        """Метод для парсинга xls файла"""
         workbook = open_workbook(file_contents=data)
         sheet = workbook.sheet_by_index(0)
-
-        return (SpimexTradingResults(
+        return [SpimexTradingResults(
             exchange_product_id=sheet.row_values(idx)[1],
             exchange_product_name=sheet.row_values(idx)[2],
             oil_id=sheet.row_values(idx)[1][:4],
@@ -68,23 +82,27 @@ class ParseManager:
             trading_date=datetime.date.today(),
             created_on=datetime.datetime.now())
             for idx in range(9, sheet.nrows)
-            if sheet.row_values(idx)[14].isnumeric() and int(sheet.row_values(idx)[14]) > 0 and sheet.row_values(idx)[2])
+            if sheet.row_values(idx)[14].isnumeric() and int(sheet.row_values(idx)[14]) > 0 and sheet.row_values(idx)[2]]
 
 
 class AsyncController:
     async def _get_files_links(self) -> list[list[str]]:
+        """Метод для асинхронного прохода по всем страницам и сбора ссылок на файлы"""
         pages_count: int = await ParseManager.get_pages_count()
-        pages_uris: list[str] = [BASE_URL + f'?page=page-{item}&bxajaxid={BXAJAXID}' for item in range(1, pages_count + 1)]
+        pages_uris: list[str] = [BASE_URL + f'?page=page-{page_number}&bxajaxid={BXAJAXID}'
+                                      for page_number in range(1, pages_count + 1)]
         tasks: list = []
         for uri in pages_uris:
             tasks.append(asyncio.create_task(QueryManager.get_page(uri)))
-        result: list = await asyncio.gather(*tasks)
+        result: list[list[str]] = await asyncio.gather(*tasks)
         return result
 
-    async def get_objects(self):
-        plain_links_list: Generator[str] = (item for sublist in await self._get_files_links() for item in sublist)
+    async def get_objects(self) -> list[list[SpimexTradingResults]]:
+        """Метод для асинхронного получения данных из xls файлов"""
+        plain_links_list: list[str] = [item for sublist in await self._get_files_links() for item in sublist]
         tasks: list = []
+        semaphore = asyncio.Semaphore(10)
         for link in plain_links_list:
-            tasks.append(asyncio.create_task(QueryManager.get_file_data(link)))
-        result = await asyncio.gather(*tasks)
+            tasks.append(asyncio.create_task(QueryManager.get_file_data(link, semaphore)))
+        result: list[list[SpimexTradingResults]] = await asyncio.gather(*tasks)
         return result

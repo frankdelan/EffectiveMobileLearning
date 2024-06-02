@@ -1,8 +1,9 @@
 import asyncio
 import datetime
+from typing import Optional
 
 from bs4 import BeautifulSoup
-from aiohttp import ClientSession, ClientPayloadError
+from aiohttp import ClientSession, ClientPayloadError, ClientConnectorError
 from xlrd import open_workbook
 
 from models import SpimexTradingResults
@@ -22,23 +23,26 @@ class QueryManager:
                     return data
 
     @staticmethod
-    async def get_file_data(uri: str, semaphore: asyncio.Semaphore) -> list[SpimexTradingResults]:
+    async def get_file_data(uri: str, semaphore: asyncio.Semaphore) -> list[Optional[SpimexTradingResults]]:
         """Метод для получения данных xls файла"""
         async with semaphore:
-            async with ClientSession() as session:
-                retries = 3
-                for attempt in range(retries):
-                    try:
-                        async with session.get(url=uri, params={"downloadformat": "xls"}) as response:
-                            data: bytes = await response.read()
-                            if response.status == 200:
-                                return await ParseManager.parse_xlsx(data)
-                    except ClientPayloadError as e:
-                        if attempt < retries - 1:
-                            await asyncio.sleep(1)
-                            continue
-                        else:
-                            raise e
+            try:
+                async with ClientSession() as session:
+                    retries = 3
+                    for attempt in range(retries):
+                        try:
+                            async with session.get(url=uri, params={"downloadformat": "xls"}) as response:
+                                data: bytes = await response.read()
+                                if response.status == 200:
+                                    return await ParseManager.parse_xlsx(data)
+                        except ClientPayloadError as e:
+                            if attempt < retries - 1:
+                                await asyncio.sleep(1)
+                                continue
+                            else:
+                                raise e
+            except ClientConnectorError:
+                return []
 
     @staticmethod
     async def get_page(uri: str) -> list[str]:
@@ -90,11 +94,12 @@ class AsyncController:
         """Метод для асинхронного прохода по всем страницам и сбора ссылок на файлы"""
         pages_count: int = await ParseManager.get_pages_count()
         pages_uris: list[str] = [BASE_URL + f'?page=page-{page_number}&bxajaxid={BXAJAXID}'
-                                      for page_number in range(1, pages_count + 1)]
+                                      for page_number in range(201, pages_count + 1)]
         tasks: list = []
         for uri in pages_uris:
             tasks.append(asyncio.create_task(QueryManager.get_page(uri)))
         result: list[list[str]] = await asyncio.gather(*tasks)
+        print(result)
         return result
 
     async def get_objects(self) -> list[list[SpimexTradingResults]]:

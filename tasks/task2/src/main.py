@@ -1,5 +1,6 @@
 import asyncio
 import itertools
+from time import time
 
 from database import async_session_factory
 from scraping.parser import AsyncController
@@ -13,4 +14,6 @@ async def fill_database():
         session.add_all(itertools.chain.from_iterable(objects))
         await session.commit()
 
+start = time()
 asyncio.run(fill_database())
+print(time() - start)

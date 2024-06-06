@@ -1,0 +1,7 @@
+{% extends 'dog_app/base.html' %}
+
+{% block content %}
+    <h1>Кличка - {{dog.name}}</h1>
+    <h2>Порода - {{dog.breed.name}}</h2>
+    <h3>Возраст - {{dog.age}}</h3>
+{% endblock %}

@@ -16,12 +16,15 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
-from dog_app.controllers import DogList, DogDetail, BreedDetail, BreedList
+from dog_app.controllers import DogViewSet, BreedViewSet
+from dog_app.views import DogDetailView, DogListView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/dogs', DogList.as_view(), name='dogs_list'),
-    path('api/dogs/<int:pk>', DogDetail.as_view(), name='dog_info'),
-    path('api/breeds', BreedList.as_view(), name='breeds_list'),
-    path('api/breeds/<int:pk>', BreedDetail.as_view(), name='breed_info'),
+    path('api/dogs', DogViewSet.as_view({'get': 'list',
+                                         'post': 'create'}), name='dogs'),
+    path('api/breeds', BreedViewSet.as_view({'get': 'list',
+                                             'post': 'create'}), name='breeds'),
+    path('api/dogs/<int:pk>', DogViewSet.as_view({'get': 'retrieve', 'put': 'update', 'delete': 'destroy'})),
+    path('api/breeds/<int:pk>', BreedViewSet.as_view({'get': 'retrieve', 'put': 'update', 'delete': 'destroy'})),
 ]

@@ -1,0 +1,13 @@
+{% extends 'dog_app/base.html' %}
+
+
+{% block content %}
+    {% for item in object_list %}
+    <ul>
+        <h1>Собака {{item.name}}</h1>
+        <li>Порода - {{item.breed.name}}</li>
+        <li>Возраст - {{item.age}}</li>
+        <a href="{{ item.get_absolute_url }}">Ссылка</a>
+    </ul>
+    {% endfor %}
+{% endblock %}

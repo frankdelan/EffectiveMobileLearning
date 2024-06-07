@@ -1,10 +1,11 @@
+import asyncio
 import datetime
 from typing import Optional
 
 from sqlalchemy import BigInteger
 from sqlalchemy.orm import Mapped, mapped_column
 
-from database import Base
+from database import Base, async_engine
 
 
 class SpimexTradingResults(Base):

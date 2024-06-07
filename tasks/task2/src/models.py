@@ -23,4 +23,4 @@ class SpimexTradingResults(Base):
     count: Mapped[int]
     trading_date: Mapped[datetime.date]
     created_on: Mapped[datetime.datetime] = mapped_column(default=datetime.datetime.now())
-    created_on: Mapped[Optional[datetime.datetime]]
+    updated_on: Mapped[Optional[datetime.datetime]]

@@ -6,7 +6,7 @@ from typing import Optional
 import fake_useragent
 import pandas as pd
 from bs4 import BeautifulSoup
-from aiohttp import ClientSession, ClientConnectorError, ClientPayloadError, ClientTimeout
+from aiohttp import ClientSession, ClientTimeout
 from pandas import DataFrame
 
 from decorators import handle_client_exception
@@ -42,7 +42,7 @@ class QueryManager:
         async with ClientSession(headers=await QueryManager.get_header_data()) as session:
             async with session.get(url=uri, params={"downloadformat": "xls"}) as response:
                 if response.status == 200:
-                    data = pd.read_excel(io.BytesIO(await response.read()), usecols='B:O', skiprows=7)
+                    data = pd.read_excel(io.BytesIO(await response.read()), usecols='B:O', skiprows=3)
                     return await ParseManager.parse_xlsx(data.dropna())
 
     @staticmethod
@@ -74,6 +74,7 @@ class ParseManager:
     @staticmethod
     async def parse_xlsx(data: DataFrame) -> list[SpimexTradingResults]:
         """Метод для парсинга xls файла"""
+        trading_date = data.columns[0].replace('Дата торгов: ', '')
         return [SpimexTradingResults(
             exchange_product_id=item[1],
             exchange_product_name=item[2],
@@ -84,7 +85,7 @@ class ParseManager:
             volume=0 if item[4] == '-' else int(item[4]),
             total=0 if item[5] == '-' else int(item[5]),
             count=int(item[14]),
-            trading_date=datetime.date.today(),
+            trading_date=datetime.datetime.strptime(f'{trading_date}', '%d.%m.%Y').date(),
             created_on=datetime.datetime.now())
             for item in data.itertuples()
             if item[2] and item[14].isnumeric()]

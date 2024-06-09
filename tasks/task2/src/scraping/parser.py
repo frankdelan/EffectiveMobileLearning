@@ -6,7 +6,7 @@ from typing import Optional
 import fake_useragent
 import pandas as pd
 from bs4 import BeautifulSoup
-from aiohttp import ClientSession, ClientTimeout
+from aiohttp import ClientSession
 from pandas import DataFrame
 
 from decorators import handle_client_exception
@@ -26,7 +26,6 @@ class QueryManager:
         return header
 
     @staticmethod
-    @handle_client_exception(default_return=None)
     async def get_html(uri: str) -> str:
         """Метод для получения html страницы"""
         async with ClientSession(headers=await QueryManager.get_header_data()) as session:
@@ -41,8 +40,8 @@ class QueryManager:
         """Метод для получения данных xls файла"""
         async with ClientSession(headers=await QueryManager.get_header_data()) as session:
             async with session.get(url=uri, params={"downloadformat": "xls"}) as response:
-                if response.status == 200:
-                    data = pd.read_excel(io.BytesIO(await response.read()), usecols='B:O', skiprows=3)
+                data = pd.read_excel(io.BytesIO(await response.read()), usecols='B:O', skiprows=3)
+                if not data.empty:
                     return await ParseManager.parse_xlsx(data.dropna())
 
     @staticmethod
@@ -83,19 +82,19 @@ class ParseManager:
             delivery_basis_name=item[3],
             delivery_type_id=item[1][-1],
             volume=0 if item[4] == '-' else int(item[4]),
-            total=0 if item[5] == '-' else int(item[5]),
+            total=0 if item[5] == '-' else float(item[5]),
             count=int(item[14]),
             trading_date=datetime.datetime.strptime(f'{trading_date}', '%d.%m.%Y').date(),
             created_on=datetime.datetime.now())
             for item in data.itertuples()
-            if item[2] and item[14].isnumeric()]
+            if item[2] and item[14] != '-']
 
 
 class AsyncController:
     async def _get_files_links(self) -> list[list[str]]:
         """Метод для асинхронного прохода по всем страницам и сбора ссылок на файлы"""
         pages_count: int = await ParseManager.get_pages_count()
-        pages_uris: list[str] = [BASE_URL + f'?page=page-{page_number}&bxajaxid={BXAJAXID}'
+        pages_uris: list[str] = [BASE_URL + f'&page=page-{page_number}'
                                  for page_number in range(1, pages_count + 1)]
         tasks: list = []
         for uri in pages_uris:

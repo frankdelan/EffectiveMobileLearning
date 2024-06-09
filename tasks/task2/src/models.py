@@ -19,7 +19,7 @@ class SpimexTradingResults(Base):
     delivery_basis_name: Mapped[str]
     delivery_type_id: Mapped[str]
     volume: Mapped[Optional[int]]
-    total: Mapped[Optional[int]] = mapped_column(BigInteger)
+    total: Mapped[Optional[float]]
     count: Mapped[int]
     trading_date: Mapped[datetime.date]
     created_on: Mapped[datetime.datetime] = mapped_column(default=datetime.datetime.now())

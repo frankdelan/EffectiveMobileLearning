@@ -28,20 +28,18 @@ async def get_last_trading_dates(count: int,
 async def get_trading_results(data: LastTradingSchema = Depends(LastTradingSchema),
                               service: TradingService = Depends(TradingService)):
     deals = await service.get_trading_results(data.model_dump())
-    ready_deals: list[TradingDealSchema] = [TradingDealSchema.model_validate(item) for item in deals]
     if not deals:
         return ErrorResponseSchema(detail='Deals not found')
-    return SuccessResponseSchema(data=ready_deals,
+    return SuccessResponseSchema(data=[TradingDealSchema.model_validate(item) for item in deals],
                                  detail=f'last trading dates')
 
 
-@router.get('/list/period', response_model=SuccessResponseSchema | ErrorResponseSchema)
+@router.get('/period', response_model=SuccessResponseSchema | ErrorResponseSchema)
 @cache(expire=get_expire_time())
 async def get_dynamics(data: LastPeriodTradingSchema = Depends(LastPeriodTradingSchema),
                        service: TradingService = Depends(TradingService)):
     deals = await service.get_dynamics(data.model_dump())
-    ready_deals: list[TradingDealSchema] = [TradingDealSchema.model_validate(item) for item in deals]
     if not deals:
         return ErrorResponseSchema(detail='Deals not found')
-    return SuccessResponseSchema(data=ready_deals,
+    return SuccessResponseSchema(data=[TradingDealSchema.model_validate(item) for item in deals],
                                  detail=f'deals for the period from {data.start_date} to {data.end_date}')

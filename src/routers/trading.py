@@ -20,7 +20,7 @@ async def get_last_trading_dates(count: int,
     if not dates:
         return ErrorResponseSchema(detail='Deals not found')
     return SuccessResponseSchema(data=dates,
-                                 detail=f'last {count} trading dates')
+                                 detail=f'last {abs(count)} trading dates')
 
 
 @router.get('/list', response_model=SuccessResponseSchema | ErrorResponseSchema)

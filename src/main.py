@@ -1,3 +1,6 @@
+from contextlib import asynccontextmanager
+from typing import AsyncIterator
+
 from fastapi import FastAPI
 from routers.trading import router as trading_router
 
@@ -14,5 +17,5 @@ app.include_router(trading_router)
 
 @app.on_event("startup")
 async def startup():
-    redis = aioredis.from_url(settings.REDIS_URL)
+    redis = aioredis.from_url(settings.REDIS_URL, encoding="utf8", decode_responses=True)
     FastAPICache.init(RedisBackend(redis), prefix="fastapi-cache")
